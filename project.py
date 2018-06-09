@@ -15,7 +15,7 @@ my_path = os.path.abspath(os.path.dirname(__file__))
 WIDTH = 500
 HEIGHT = 750
 FPS = 30
-shootdelay = 0.08
+shootdelay = 200
 bulletspeed = -10
 
 # define colors
@@ -53,7 +53,12 @@ class Player(pygame.sprite.Sprite):
         self.lives = 3
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
+        self.power = 1
+        self.power_time = pygame.time.get_ticks()
     def update(self):
+        if self.power >=2 and pygame.time.get_ticks() - self.power_time > 5000:
+            self.power -= 1
+            self.power_time = pygame.time.get_ticks()
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
             self.rect.center = (WIDTH / 2, HEIGHT - 20)
@@ -63,17 +68,30 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = WIDTH
         if self.rect.bottom > HEIGHT:
             self.rect.bottom = HEIGHT
-        elif self.rect.top < HEIGHT -150:
-            self.rect.top = HEIGHT -150
+        elif self.rect.top <= 0:
+            self.rect.top = 0
 
-
+    def powerup(self):
+        self.power +=1
+        self.power_time = pygame.time.get_ticks()
 
     def shoot(self):
-        self.bullet = Bullet(self.rect.centerx, self.rect.top)
-        if time.time()-self.lastshot > shootdelay:
-            self.lastshot = time.time()
-            all_sprites.add(self.bullet)
-            bullets.add(self.bullet)
+        if pygame.time.get_ticks()-self.lastshot > shootdelay:
+            self.lastshot = pygame.time.get_ticks()
+            if self.power == 1:
+                bullet = Bullet(self.rect.centerx, self.rect.top,1)
+                all_sprites.add(bullet)
+                bullets.add(bullet)
+            if self.power >= 2:
+                bullet = Bullet(self.rect.centerx, self.rect.top, 1)
+                bullet1 = Bullet(self.rect.left,self.rect.centery,2)
+                bullet2 = Bullet(self.rect.left,self.rect.centery,3)
+                all_sprites.add(bullet)
+                all_sprites.add(bullet1)
+                all_sprites.add(bullet2)
+                bullets.add(bullet)
+                bullets.add(bullet1)
+                bullets.add(bullet2)
 
     def hide(self):
         self.hidden = True
@@ -103,7 +121,7 @@ class Enemy(pygame.sprite.Sprite):
             self.speedy = random.randrange(1, 8)
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self,x,y):
+    def __init__(self,x,y,type):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(bullet_img,(10,20))
 
@@ -111,10 +129,58 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.bottom = y
         self.rect.centerx = x
         self.speedy = bulletspeed
+        self.type = type
+    def update(self):
+        if self.type == 1:
+            self.rect.y += self.speedy
+        if self.type == 2:
+            self.rect.y += self.speedy
+            self.rect.x -= 3
+        if self.type ==3:
+            self.rect.y += self.speedy
+            self.rect.x += 3
+
+
+class Powerup(pygame.sprite.Sprite):
+    def __init__(self,center):
+        pygame.sprite.Sprite.__init__(self)
+        self.type = random.choice(['shield','shot'])
+        self.image = powerup_img[self.type]
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.speedy = 5
     def update(self):
         self.rect.y += self.speedy
-        if self.rect.top < 0:
+        if self.rect.bottom > HEIGHT:
             self.kill()
+
+class Clone(pygame.sprite.Sprite):
+    def __init__(self,x1):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(ship_img,(30,40))
+        self.image.set_colorkey(WHITE)
+        self.rect = self.image.get_rect()
+        self.radius = 16
+        self.x1 = x1
+        self.rect.x = player.rect.x + x1
+        self.rect.y = player.rect.y
+        self.then = 0
+        self.clone_time = 0.01
+        self.lastshot = 0
+    def update(self):
+        self.bullet = Bullet(self.rect.centerx, self.rect.top, 1)
+        if pygame.time.get_ticks()-self.lastshot > shootdelay:
+            self.lastshot = pygame.time.get_ticks()
+            all_sprites.add(self.bullet)
+            bullets.add(self.bullet)
+        self.rect.x = player.rect.x + self.x1
+        self.rect.y = player.rect.y
+    def removeremove(self):
+        if pygame.time.get_ticks()-self.lastshot > 3000:
+            self.lastshot = pygame.time.get_ticks()
+            all_sprites.remove(clones)
+            clones.empty()
 class ScoreBoard():
     def __init__(self, font_size=20, score=0):
         self.x = WIDTH - 150
@@ -187,14 +253,18 @@ def start_menu():
         screen.fill(BLACK)
         screen.blit(background, (0,0))
         largeText = pygame.font.Font('freesansbold.ttf', 30)
-        TextSurf, TextRect = text_objects("Space shooter", largeText)
+        TextSurf, TextRect = text_objects("Space Shooter:", largeText)
+        TextSurf1, TextRect1 = text_objects("Ky thi dai hoc sap den", largeText)
+        TextRect1.center = ((WIDTH/2),(HEIGHT/2 + 100))
         TextRect.center = ((WIDTH / 2), (HEIGHT / 2))
+        screen.blit(TextSurf1,TextRect1)
         screen.blit(TextSurf, TextRect)
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
+                quit1()
         button("Keyboard", WIDTH / 2 - 50, HEIGHT / 2 + 200, 100, 40, YELLOW, bright_yellow,change1 )
         button("Webcam", WIDTH / 2 - 50, HEIGHT / 2 + 250, 100, 40, GREEN, bright_green,change2 )
         button("ABOUT",10,700,100,40, BLACK,bright_black, about)
@@ -313,8 +383,10 @@ def draw_lives(surf,x,y,lives,img):
 
 # Load images
 background = pygame.image.load(os.path.join(my_path, "D:\\Download by Nhan\\galaxy.jpg")).convert()
+background = pygame.transform.scale(background,(WIDTH,HEIGHT))
 background_rect = background.get_rect()
-ship_img = pygame.image.load(os.path.join(my_path, "Image\\player.png")).convert()
+shield_img = pygame.transform.scale(pygame.image.load(os.path.join(my_path, "Image\\shield.png")),(40,30))
+ship_img = pygame.image.load(os.path.join(my_path, "Image\\player.png"))
 ship_mini_img = pygame.transform.scale(ship_img, (30,30))
 ship_mini_img.set_colorkey(BLACK)
 bullet_img = pygame.image.load(os.path.join(my_path, "D:\\Download by Nhan\\sperm.png"))
@@ -339,13 +411,17 @@ for i in range(9):
     img = pygame.image.load(os.path.join(my_path, file_name1)).convert()
     img.set_colorkey(BLACK)
     explosion_anim['sn'].append(img)
-
-
+##powerup
+powerup_img ={}
+powerup_img['shield'] = pygame.image.load(os.path.join(my_path, "Image\\shield_gold.png")).convert()
+# powerup_img['clone'] = pygame.image.load(os.path.join(my_path, "D:\\Download by Nhan\\trym.png")).convert()
+powerup_img['shot'] = pygame.image.load(os.path.join(my_path, "Image\\bolt_gold.png")).convert()
+# powerup_img['destroy'] = pygame.image.load(os.path.join(my_path, "Image\\player.png")).convert()
 #Load music
 explosion_music = pygame.mixer.Sound(os.path.join(my_path, "Sound\\explosion.wav"))
 bullet_music = pygame.mixer.Sound(os.path.join(my_path, "Sound\\bullet.wav"))
 pygame.mixer.music.load("Sound\\nhacnen.wav")
-pygame.mixer.music.set_volume(2)
+pygame.mixer.music.set_volume(0)
 
 #Game loop
 running = True
@@ -365,6 +441,8 @@ while running:
         score = ScoreBoard()
         enemy = pygame.sprite.Group()
         bullets = pygame.sprite.Group()
+        powerups = pygame.sprite.Group()
+        clones = pygame.sprite.Group()
         all_sprites.add(player)
         for i in range(30):
             new_enemy()
@@ -376,6 +454,8 @@ while running:
        # closing window
         if event.type == pygame.QUIT:
             running = False
+            if bien_phu == -2:
+                vision.endend()
     keys = pygame.key.get_pressed()
     if bien_phu == -1:
         if keys[pygame.K_LEFT]:
@@ -395,9 +475,9 @@ while running:
         posX, posY = vision.get_currentPos()
         if posX != 0 and posY != 0:
             player.rect.x = 2*posX
-            player.rect.y = 2*posY
+            player.rect.y = 2*posY+150
         if vision.get_len() != 0:
-            print("0")
+            player.shoot()
     if keys[pygame.K_p]:
         FPS += 3
     # Update
@@ -407,9 +487,13 @@ while running:
     hits1 = pygame.sprite.groupcollide(bullets,enemy,True,True)
     for hit in hits1:
         bullet_music.play()
-        new_enemy()
         expl_lg = Explosion(hit.rect.center,'lg')
         all_sprites.add(expl_lg)
+        if random.random() > 0.9:
+            pow = Powerup(hit.rect.center)
+            all_sprites.add(pow)
+            powerups.add(pow)
+        new_enemy()
     hits2 = pygame.sprite.spritecollide(player,enemy,True,pygame.sprite.collide_circle)
     for hit in hits2:
         player.shield -= hit.radius *2
@@ -421,6 +505,30 @@ while running:
             player.hide()
             player.lives -= 1
             player.shield = 200
+    hits3 = pygame.sprite.spritecollide(player,powerups,True)
+    for hit in hits3:
+        if hit.type == 'shield':
+            player.shield += random.randrange(10,90)
+            if player.shield >= 200:
+                player.shield = 200
+        if hit.type == 'shot':
+            player.powerup()
+        # if hit.type == 'clone':
+        #     print("hhh")
+        #     clone1 = Clone(70)
+        #     clone2 = Clone(-70)
+        #     all_sprites.add(clone1)
+        #     clones.add(clone1)
+        #     all_sprites.add(clone2)
+        #     clones.add(clone2)
+        #     clone1.removeremove()
+        # if hit.type == 'destroy':
+        #     destroy_time = pygame.time.get_ticks()
+        #     all_sprites.remove(enemy)
+        #     enemy.empty()
+        #     # if pygame.time.get_ticks() - destroy_time[0] >1:
+        #     for i in range(30):
+        #         new_enemy()
     if player.lives == 0 and not expl_sn.alive():
         if not cam:
             vision.endend()
@@ -438,6 +546,7 @@ while running:
     score.display(score.score)
     draw_shield_bar(screen,5,5,player.shield)
     draw_lives(screen,5,30,player.lives,ship_mini_img)
+    screen.blit(shield_img,(player.rect.x-5,player.rect.y-2))
     # *after* drawing everything, flip the display
     pygame.display.flip()
 
