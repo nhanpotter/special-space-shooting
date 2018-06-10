@@ -1,5 +1,8 @@
 import cv2
+import os
 from threading import Thread
+
+my_path = os.path.abspath(os.path.dirname(__file__))
 
 class Webcam():
     def __init__(self):
@@ -8,7 +11,7 @@ class Webcam():
         self.posX = 0
         self.posY = 0
         self.len = 0
-        self.cascade = cv2.CascadeClassifier("D:\\Download by Nhan\\OpenCV-master\\haarcascades\\fist.xml")
+        self.cascade = cv2.CascadeClassifier(os.path.join(my_path, "fist.xml"))
     def update(self,gggg,tt):
         self.cc = gggg
         while (self.cc):
