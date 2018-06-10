@@ -144,7 +144,7 @@ class Bullet(pygame.sprite.Sprite):
 class Powerup(pygame.sprite.Sprite):
     def __init__(self,center):
         pygame.sprite.Sprite.__init__(self)
-        self.type = random.choice(['shield','shot'])
+        self.type = random.choice(['shield','shot','destroy','clone'])
         self.image = powerup_img[self.type]
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
@@ -169,18 +169,13 @@ class Clone(pygame.sprite.Sprite):
         self.clone_time = 0.01
         self.lastshot = 0
     def update(self):
-        self.bullet = Bullet(self.rect.centerx, self.rect.top, 1)
+        bullet = Bullet(self.rect.centerx, self.rect.top, 1)
         if pygame.time.get_ticks()-self.lastshot > shootdelay:
             self.lastshot = pygame.time.get_ticks()
-            all_sprites.add(self.bullet)
-            bullets.add(self.bullet)
+            all_sprites.add(bullet)
+            bullets.add(bullet)
         self.rect.x = player.rect.x + self.x1
         self.rect.y = player.rect.y
-    def removeremove(self):
-        if pygame.time.get_ticks()-self.lastshot > 3000:
-            self.lastshot = pygame.time.get_ticks()
-            all_sprites.remove(clones)
-            clones.empty()
 class ScoreBoard():
     def __init__(self, font_size=20, score=0):
         self.x = WIDTH - 150
@@ -414,9 +409,9 @@ for i in range(9):
 ##powerup
 powerup_img ={}
 powerup_img['shield'] = pygame.image.load(os.path.join(my_path, "Image\\shield_gold.png")).convert()
-# powerup_img['clone'] = pygame.image.load(os.path.join(my_path, "D:\\Download by Nhan\\trym.png")).convert()
+powerup_img['clone'] = pygame.image.load(os.path.join(my_path, "D:\\Download by Nhan\\trym.png")).convert()
 powerup_img['shot'] = pygame.image.load(os.path.join(my_path, "Image\\bolt_gold.png")).convert()
-# powerup_img['destroy'] = pygame.image.load(os.path.join(my_path, "Image\\player.png")).convert()
+powerup_img['destroy'] = pygame.image.load(os.path.join(my_path, "Image\\player.png")).convert()
 #Load music
 explosion_music = pygame.mixer.Sound(os.path.join(my_path, "Sound\\explosion.wav"))
 bullet_music = pygame.mixer.Sound(os.path.join(my_path, "Sound\\bullet.wav"))
@@ -427,6 +422,10 @@ pygame.mixer.music.set_volume(0)
 running = True
 game_over = True
 bien_phu = -100
+##bien cho powerup
+clone_number = 0
+destroyn = 0
+destroy_time = 0
 c = -1
 
 pygame.mixer.music.play(loops = -1)
@@ -513,22 +512,32 @@ while running:
                 player.shield = 200
         if hit.type == 'shot':
             player.powerup()
-        # if hit.type == 'clone':
-        #     print("hhh")
-        #     clone1 = Clone(70)
-        #     clone2 = Clone(-70)
-        #     all_sprites.add(clone1)
-        #     clones.add(clone1)
-        #     all_sprites.add(clone2)
-        #     clones.add(clone2)
-        #     clone1.removeremove()
-        # if hit.type == 'destroy':
-        #     destroy_time = pygame.time.get_ticks()
-        #     all_sprites.remove(enemy)
-        #     enemy.empty()
-        #     # if pygame.time.get_ticks() - destroy_time[0] >1:
-        #     for i in range(30):
-        #         new_enemy()
+        if hit.type == 'clone' and clone_number == 0:
+            clone_number += 1
+            clone1 = Clone(70)
+            clone2 = Clone(-70)
+            all_sprites.add(clone1)
+            clones.add(clone1)
+            all_sprites.add(clone2)
+            clones.add(clone2)
+        if hit.type == 'destroy':
+            destroyn += 1
+            all_sprites.remove(enemy)
+            enemy.empty()
+    ##dieu kien cua powerup clone va destroy
+    if clone_number > 0 and (time.time() - clone1.then) > (clone_number + 4):
+        if (time.time() - clone1.then) < (clone_number + 4.06):
+            clone_number -= 1
+            all_sprites.remove(clones)
+            clones.empty()
+        clone1.then = time.time()
+    if destroyn > 0 and time.time() - destroy_time > 1:
+        if time.time() - destroy_time < 1.09:
+            destroyn -= 1
+            for i in range(30):
+                new_enemy()
+        destroy_time = time.time()
+    #chet
     if player.lives == 0 and not expl_sn.alive():
         if not cam:
             vision.endend()
