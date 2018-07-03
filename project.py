@@ -468,7 +468,7 @@ game_over = True
 bien_phu = -100
 time_to_blit = None
 time_to_explode = None
-enemy_number = 20
+enemy_number = 40
 c = -1
 
 pygame.mixer.music.play(loops=-1)
