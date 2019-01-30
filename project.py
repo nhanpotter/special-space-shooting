@@ -272,7 +272,7 @@ def start_menu():
         screen.blit(background, (0, 0))
         largeText = pygame.font.Font('freesansbold.ttf', 30)
         TextSurf, TextRect = text_objects("Space Shooter:", largeText)
-        TextSurf1, TextRect1 = text_objects("Ky thi dai hoc sap den", largeText)
+        TextSurf1, TextRect1 = text_objects("You cannot win!!!", largeText)
         TextRect1.center = ((WIDTH / 2), (HEIGHT / 2 + 100))
         TextRect.center = ((WIDTH / 2), (HEIGHT / 2) - 100)
         screen.blit(TextSurf1, TextRect1)
@@ -335,17 +335,14 @@ def about():
         TextSurf1, TextRect1 = text_objects("Trinh Tuan Long", largeText1)
         TextSurf2, TextRect2 = text_objects("Nguyen Tien Nhan", largeText1)
         TextSurf3, TextRect3 = text_objects("Le Minh Viet", largeText1)
-        TextSurf4, TextRect4 = text_objects("Chu Minh Hoang", largeText1)
 
         TextRect1.center = ((WIDTH / 2), (HEIGHT / 2 - 160))
         TextRect2.center = ((WIDTH / 2), (HEIGHT / 2 - 120))
         TextRect3.center = ((WIDTH / 2), (HEIGHT / 2 - 80))
-        TextRect4.center = ((WIDTH / 2), (HEIGHT / 2 - 40))
 
         screen.blit(TextSurf1, TextRect1)
         screen.blit(TextSurf2, TextRect2)
         screen.blit(TextSurf3, TextRect3)
-        screen.blit(TextSurf4, TextRect4)
 
         button("BACK", 50, 50, 110, 40, BLUE, bright_blue, back)
 
